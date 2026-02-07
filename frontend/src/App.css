@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Ruge+Boogie&display=swap');
+
+body {
+    background-color: rgb(185, 36, 182);
+    color: wheat;
+}
+
+.dark {
+  background-color:  #121212;
+  color: rgb(187, 0, 124);
+}
+
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+svg:hover {
+    cursor: pointer;
+}
+
+p {
+    display: inline;
+    font-style: italic;
+    font-size: larger;
+    line-height: 1;
+    font-weight: bold;
+}
+
+p h1 {
+    display: inline;
+}
+
+.textBox {
+    text-align: center;
+}
+
+#title {
+    color: white;
+    font-family: 'Ruge Boogie', cursive;
+    font-size: 4rem;
+}
+
+.input-container { 
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    margin-bottom: 30px;
+}
+
+input {
+    border: none;
+    border-radius: 5px;
+    padding: 5px;
+    background-color: rgba(255, 255, 255, 0.5); 
+    color: black;
+}
+
+input:focus {
+  outline: none;
+  border: 2px solid purple;
+  box-shadow: 0 0 8px purple;
+}
+
+#words-box {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+}

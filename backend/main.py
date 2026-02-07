@@ -10,7 +10,6 @@ def get_story_snippet():
     return jsonify(generate_response(story, word))
 
 
-
 if __name__ == '__main__':
     app.run(debug=True)
 

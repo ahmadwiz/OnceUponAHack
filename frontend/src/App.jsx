@@ -2,6 +2,7 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import './App.css'
 import Prompt from './Prompt'
+import Lights from './Lights'
 
 
 function App() {
@@ -9,7 +10,12 @@ function App() {
 
   return (
     <>
-     <h1>Once upon a time,</h1>
+    <div className='header'>
+      <h1 id='title'>Once Upon A Hack,</h1>
+     <Lights />
+    </div>
+     <hr />
+     <br />
      <Prompt />
 
     </>
