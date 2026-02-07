@@ -1,6 +1,9 @@
 from openai import OpenAI
 import os
 import re
+import base64
+import requests
+from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,20 +13,108 @@ client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
 )
 
+# OpenRouter image model (Gemini 2.5 Flash Image)
+IMAGE_MODEL = "google/gemini-2.5-flash-image"
+
+
 def generate_response(story, word):
-    response = client.responses.create(
-        model="openai/gpt-4o-mini",
-        input = f"""
-        Given the following story snippet as context: {story == "" and "Once upon a time" or story}, 
-        Continue the story with exactly one magic-themed sentence, relating to the word: {word},
-        """
+    """Returns (full_story, new_sentence) for continuation."""
+    if story == "" or story is None:
+        response = client.responses.create(
+            model="openai/gpt-4o-mini",
+            input=f"Start a short story with exactly one sentence that relates to the word: {word}. Do not begin with 'Once upon a time' or similar."
+        )
+    else:
+        response = client.responses.create(
+            model="openai/gpt-4o-mini",
+            input=f"Given the following story snippet: {story}, respond with exactly one sentence following the story that relates to the word: {word}."
+        )
+
+    new_sentence = response.output_text.strip()
+    full_story = (story + " " + new_sentence).strip() if story else new_sentence
+    return full_story, new_sentence
+
+
+def highlight_word_in_sentence(sentence: str, word: str) -> str:
+    """Wrap the given word in <span><h1>word</h1></span> for frontend display."""
+    if not word or not sentence:
+        return sentence
+    match = re.search(re.escape(word), sentence, re.IGNORECASE)
+    if match:
+        return sentence.replace(match.group(), f"<span><h1>{match.group()}</h1></span>") + "<br/><br/>"
+    return sentence + "<br/><br/>"
+
+
+def generate_image_for_sentence(sentence: str) -> Optional[str]:
+    """Generate an image for a story sentence using OpenRouter. Returns base64 data URL or None."""
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        return None
+
+    prompt = (
+        f"Generate a single illustration for this moment in a story. "
+        f"Style: storybook or digital art, clear and readable. Scene: {sentence}"
     )
 
-    match = re.search(word, response.output_text, re.IGNORECASE)
-    response = response.output_text
-    if (match):
-        response = response.replace(match.group(), f"<span><h1>{match.group()}</h1></span>") + "<br/><br/>"
+    try:
+        resp = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": IMAGE_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "modalities": ["image", "text"],
+                "stream": False,
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
 
-    return {"oldStory": story, "newStory": response, "fullStory": story + " " + response}
+        choices = data.get("choices") or []
+        if not choices:
+            return None
+        message = choices[0].get("message") or {}
+        images = message.get("images") or []
+        if not images:
+            return None
+
+        first = images[0]
+        url_obj = first.get("image_url") or first.get("imageUrl") or {}
+        return url_obj.get("url")
+    except Exception:
+        return None
 
 
+# ElevenLabs TTS: default voice Rachel; set ELEVENLABS_VOICE_ID to override
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
+
+
+def text_to_speech(sentence: str) -> Optional[str]:
+    """Convert sentence to speech via ElevenLabs. Returns base64 data URL (audio/mpeg) or None."""
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    if not api_key or not sentence.strip():
+        return None
+
+    try:
+        resp = requests.post(
+            f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}",
+            headers={
+                "xi-api-key": api_key,
+                "Content-Type": "application/json",
+                "Accept": "audio/mpeg",
+            },
+            json={
+                "text": sentence.strip(),
+                "model_id": "eleven_multilingual_v2",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        b64 = base64.b64encode(resp.content).decode("utf-8")
+        return f"data:audio/mpeg;base64,{b64}"
+    except Exception:
+        return None
