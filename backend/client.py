@@ -11,26 +11,29 @@ client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
 )
 
-# OpenRouter image model (Gemini 2.5 Flash Image - supports text + image output)
+# OpenRouter image model (Gemini 2.5 Flash Image)
 IMAGE_MODEL = "google/gemini-2.5-flash-image"
 
 
 def generate_response(story, word):
     if story == "":
-        story = "Once upon a time,"
-
-    response = client.responses.create(
-        model="openai/gpt-4o-mini",
-        input=f"Given the following story snippet: {story}, respond with exactly one sentence following the story that relates to the word: {word}."
-    )
+        response = client.responses.create(
+            model="openai/gpt-4o-mini",
+            input=f"Start a short story with exactly one sentence that relates to the word: {word}. Do not begin with 'Once upon a time' or similar."
+        )
+    else:
+        response = client.responses.create(
+            model="openai/gpt-4o-mini",
+            input=f"Given the following story snippet: {story}, respond with exactly one sentence following the story that relates to the word: {word}."
+        )
 
     new_sentence = response.output_text.strip()
-    full_story = story + " " + new_sentence
+    full_story = (story + " " + new_sentence).strip() if story else new_sentence
     return full_story, new_sentence
 
 
 def generate_image_for_sentence(sentence: str) -> str | None:
-    """Generate an image for a story sentence using OpenRouter image model. Returns base64 data URL or None."""
+    """Generate an image for a story sentence using OpenRouter. Returns base64 data URL or None."""
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         return None
@@ -66,7 +69,6 @@ def generate_image_for_sentence(sentence: str) -> str | None:
         if not images:
             return None
 
-        # OpenRouter returns image_url with url as base64 data URL
         first = images[0]
         url_obj = first.get("image_url") or first.get("imageUrl") or {}
         return url_obj.get("url")
@@ -74,7 +76,7 @@ def generate_image_for_sentence(sentence: str) -> str | None:
         return None
 
 
-# ElevenLabs TTS: default voice is "Rachel" (21m00Tcm4TlvDq8ikWAM); set ELEVENLABS_VOICE_ID to override
+# ElevenLabs TTS: default voice Rachel; set ELEVENLABS_VOICE_ID to override
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
 
 

@@ -19,7 +19,5 @@ def get_story_snippet():
     })
 
 
-
 if __name__ == '__main__':
     app.run(debug=True)
-
