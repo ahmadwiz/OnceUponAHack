@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Env (keep keys local)
+.env
+
+# Build / cache
+dist/
+*.local
+
+# OS / editor
+.DS_Store
+.idea
+.vscode/

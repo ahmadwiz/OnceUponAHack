@@ -1,0 +1,50 @@
+.app {
+  min-height: 100vh;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-title {
+  font-family: var(--font-story);
+  font-size: 2.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.app-tagline {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+
+.app-main {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .app {
+    padding: 3rem 2rem 5rem;
+  }
+
+  .app-title {
+    font-size: 2.75rem;
+  }
+
+  .app-tagline {
+    font-size: 1rem;
+  }
+}

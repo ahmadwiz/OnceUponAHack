@@ -1,5 +1,7 @@
 from openai import OpenAI
 import os
+import base64
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -8,6 +10,10 @@ client = OpenAI(
     api_key=os.getenv("OPENROUTER_API_KEY"),
     base_url="https://openrouter.ai/api/v1",
 )
+
+# OpenRouter image model (Gemini 2.5 Flash Image - supports text + image output)
+IMAGE_MODEL = "google/gemini-2.5-flash-image"
+
 
 def generate_response(story, word):
     if story == "":
@@ -18,4 +24,82 @@ def generate_response(story, word):
         input=f"Given the following story snippet: {story}, respond with exactly one sentence following the story that relates to the word: {word}."
     )
 
-    return story + " " + response.output_text
+    new_sentence = response.output_text.strip()
+    full_story = story + " " + new_sentence
+    return full_story, new_sentence
+
+
+def generate_image_for_sentence(sentence: str) -> str | None:
+    """Generate an image for a story sentence using OpenRouter image model. Returns base64 data URL or None."""
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        return None
+
+    prompt = (
+        f"Generate a single illustration for this moment in a story. "
+        f"Style: storybook or digital art, clear and readable. Scene: {sentence}"
+    )
+
+    try:
+        resp = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": IMAGE_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "modalities": ["image", "text"],
+                "stream": False,
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        choices = data.get("choices") or []
+        if not choices:
+            return None
+        message = choices[0].get("message") or {}
+        images = message.get("images") or []
+        if not images:
+            return None
+
+        # OpenRouter returns image_url with url as base64 data URL
+        first = images[0]
+        url_obj = first.get("image_url") or first.get("imageUrl") or {}
+        return url_obj.get("url")
+    except Exception:
+        return None
+
+
+# ElevenLabs TTS: default voice is "Rachel" (21m00Tcm4TlvDq8ikWAM); set ELEVENLABS_VOICE_ID to override
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
+
+
+def text_to_speech(sentence: str) -> str | None:
+    """Convert sentence to speech via ElevenLabs. Returns base64 data URL (audio/mpeg) or None."""
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    if not api_key or not sentence.strip():
+        return None
+
+    try:
+        resp = requests.post(
+            f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}",
+            headers={
+                "xi-api-key": api_key,
+                "Content-Type": "application/json",
+                "Accept": "audio/mpeg",
+            },
+            json={
+                "text": sentence.strip(),
+                "model_id": "eleven_multilingual_v2",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        b64 = base64.b64encode(resp.content).decode("utf-8")
+        return f"data:audio/mpeg;base64,{b64}"
+    except Exception:
+        return None
