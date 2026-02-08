@@ -14,7 +14,7 @@ function App() {
     <div className='header'>
         <div>
           <h1 className='title'>Once Upon A Hack, </h1>   
-          <h4 id='subtitle'>Tells a tale of epic proportions with but a single word🪄</h4>
+          <h4 id='subtitle'>Tell a tale of epic proportions with but a single word🪄</h4>
         </div>
         
         
