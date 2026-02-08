@@ -12,9 +12,6 @@ from client import (
 image_cache = {}
 image_cache_lock = threading.Lock()
 
-import os
-print("OpenRouter Key:", os.getenv("OPENROUTER_API_KEY"))
-
 def _generate_image_background(sentence: str) -> None:
     url = generate_image_for_sentence(sentence)
     with image_cache_lock:
