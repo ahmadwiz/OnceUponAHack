@@ -1,5 +1,7 @@
 import threading
 from flask import request, jsonify
+import os
+print("OpenRouter Key:", os.getenv("OPENROUTER_API_KEY"))
 from config import app
 from client import (
     generate_response,
